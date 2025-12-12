@@ -10,7 +10,7 @@ const configuracoesAcesso = (function() {
     return partes.join('');
 })();
 
-const MODEL_NAME = "gemma-3-27b";
+const MODEL_NAME = "gemma-3-27b-it";
 
 // DOM Elements
 const chatOutput = document.getElementById('chat-output');

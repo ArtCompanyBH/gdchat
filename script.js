@@ -1,12 +1,12 @@
 // Configuration
 const configuracoesAcesso = (function() {
     const partes = [
-        "AIzaSyAk", 
-        "-Hn7Ew2G2", 
-        "fF8wxZOG0",
-        "ryCPs_CV2",
-        "14Fk"
-    ];
+        "AIzaSyAF", 
+        "AuWmUJ6c", 
+        "6opWGOPj",
+        "8nMLdYha",
+        "lmWxA-8"
+    ]; 
     return partes.join('');
 })();
 

@@ -10,7 +10,7 @@ const configuracoesAcesso = (function() {
     return partes.join('');
 })();
 
-const MODEL_NAME = "gemini-2.5-flash-lite";
+const MODEL_NAME = "gemma-3-27b";
 
 // DOM Elements
 const chatOutput = document.getElementById('chat-output');

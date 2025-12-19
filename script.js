@@ -10,7 +10,18 @@ const configuracoesAcesso = (function() {
     return partes.join('');
 })();
 
-const MODEL_NAME = "gemma-3-1b-it";
+// Lista de modelos disponíveis
+const MODELOS_DISPONIVEIS = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite", 
+    "gemini-3-flash"
+];
+
+// Função para escolher um modelo aleatório
+function escolherModeloAleatorio() {
+    const indice = Math.floor(Math.random() * MODELOS_DISPONIVEIS.length);
+    return MODELOS_DISPONIVEIS[indice];
+}
 
 // DOM Elements
 const chatOutput = document.getElementById('chat-output');
@@ -177,8 +188,12 @@ async function sendMessage(message) {
     addMessage('user', message);
     addMessage('bot', 'Carregando resposta...', true);
 
+    // Escolhe um modelo aleatório para esta solicitação
+    const modeloAtual = escolherModeloAleatorio();
+    console.log(`Usando modelo: ${modeloAtual}`);
+
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${configuracoesAcesso}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modeloAtual}:generateContent?key=${configuracoesAcesso}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

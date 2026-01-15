@@ -14,7 +14,7 @@ const configuracoesAcesso = (function() {
 const MODELOS_DISPONIVEIS = [
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite", 
-    "gemini-3-flash"
+    "gemini-3-flash",
 ];
 
 // Função para escolher um modelo aleatório

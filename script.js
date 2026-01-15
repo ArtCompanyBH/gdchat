@@ -12,7 +12,8 @@ const configuracoesAcesso = (function() {
 
 // Lista de modelos disponíveis
 const MODELOS_DISPONIVEIS = [
-    
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite", 
     "gemini-3-flash-preview"
 ];
 

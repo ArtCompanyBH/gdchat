@@ -223,26 +223,63 @@ function renderMessageToUI({ role, content, timestampISO, isSystem = false }) {
 
   if (role === "system") {
     messageDiv.className = "system-message";
-    // system: texto cru (escapado)
     messageDiv.textContent = content;
-  } else if (role === "user") {
+  } 
+  else if (role === "user") {
     messageDiv.className = "user-message";
+
     const rolePrefix = "👤 Você: ";
     const safe = renderSafeBasicMarkdown(escapeHtml(content));
     messageDiv.innerHTML = `${escapeHtml(rolePrefix)}${safe}`;
-  } else {
+  } 
+  else {
+    // ===== BOT MESSAGE =====
     messageDiv.className = "bot-message";
+
     const rolePrefix = "🤖 GDCHAT: ";
     const safe = renderSafeBasicMarkdown(escapeHtml(content));
     messageDiv.innerHTML = `${escapeHtml(rolePrefix)}${safe}`;
+
+    // 🔹 Botão COPIAR
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn";
+    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+    copyBtn.title = "Copiar resposta";
+
+    // Feedback "Copiado!"
+    const feedback = document.createElement("span");
+    feedback.className = "copy-feedback";
+    feedback.textContent = "Copiado!";
+
+    copyBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      try {
+        await navigator.clipboard.writeText(content);
+        feedback.style.opacity = "1";
+
+        setTimeout(() => {
+          feedback.style.opacity = "0";
+        }, 1200);
+      } catch (err) {
+        console.error("Erro ao copiar:", err);
+      }
+    });
+
+    messageDiv.appendChild(copyBtn);
+    messageDiv.appendChild(feedback);
   }
 
-  // timestamp (exceto system)
+  // Timestamp (exceto system)
   if (role !== "system") {
     const timeSpan = document.createElement("div");
     timeSpan.className = "timestamp";
     const ts = timestampISO ? new Date(timestampISO) : new Date();
-    timeSpan.textContent = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    timeSpan.textContent = ts.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     messageDiv.appendChild(timeSpan);
   }
 
@@ -254,6 +291,7 @@ function renderMessageToUI({ role, content, timestampISO, isSystem = false }) {
 
   return messageDiv;
 }
+
 
 // Adiciona mensagem e salva nos históricos conforme flags
 function addMessage(role, content, { saveToApiHistory = true, saveToDisplayHistory = true } = {}) {

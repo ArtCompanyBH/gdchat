@@ -1,9 +1,3 @@
-// =====================
-// GDCHAT - script.js (final + Copiar)
-// - Sem DOMContentLoaded (seu script já está no fim do body)
-// - Evita crashes por elementos null
-// - Copiar resposta do bot
-// =====================
 
 // ========== Configuration ==========
 const configuracoesAcesso = (function () {

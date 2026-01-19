@@ -6,7 +6,7 @@ body {
             background-color: #F5F5F5;
             color: #333;
         }
-        
+
         h1 {
             color: #7b0000;
             text-align: center;
@@ -476,7 +476,43 @@ button:disabled:hover {
             padding: 5px 10px;
             font-size: 0.8em;
         }
-        
+
+.bot-message {
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.bot-message:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  color: #2ecc71;
+}
+
+.copy-feedback {
+  position: absolute;
+  top: 6px;
+  right: 40px;
+  font-size: 0.75rem;
+  color: #2ecc71;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+
         .site-footer {
             text-align: center;
             margin-top: 30px;

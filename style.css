@@ -166,7 +166,296 @@ body {
             margin-right: 8px;
             animation: pulse 1.5s infinite;
         }
-        
+
+/* Adicione estas regras ao seu CSS existente */
+
+/* Container do header */
+.header-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Indicador de modelo no status */
+.model-indicator {
+    margin-left: 15px;
+    font-size: 0.8em;
+    color: #666;
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* Área de comandos rápidos */
+#quick-commands {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.cmd-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+
+.cmd-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.cmd-btn i {
+    font-size: 0.9em;
+}
+
+/* Textarea no lugar do input */
+textarea#text-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    max-height: 200px;
+    transition: border-color 0.3s;
+}
+
+textarea#text-input:focus {
+    outline: none;
+    border-color: #4285F4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+/* Estatísticas do input */
+.input-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+.warning {
+    color: #ea4335;
+    font-weight: bold;
+}
+
+/* Indicador de digitação aprimorado */
+.typing-indicator {
+    color: #70757a;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f1f1f1;
+    border-radius: 18px 18px 18px 0;
+    max-width: 80%;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background: #666;
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+    0%, 60%, 100% { 
+        transform: translateY(0); 
+        opacity: 0.6;
+    }
+    30% { 
+        transform: translateY(-5px); 
+        opacity: 1;
+    }
+}
+
+/* Botões com ícones */
+button i {
+    font-size: 1em;
+}
+
+/* Status de mensagens grandes */
+.text-large-indicator {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 8px 12px;
+    margin: 10px 0;
+    font-size: 0.9em;
+}
+
+/* Progresso de processamento */
+.progress-container {
+    width: 100%;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 6px;
+    background-color: #34a853;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Informações do rodapé */
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #777;
+}
+
+/* Botões de resposta rápida melhorados */
+#quick-replies button {
+    background-color: #e3f2fd;
+    color: #1a73e8;
+    border: 1px solid #bbdefb;
+    padding: 8px 15px;
+    font-size: 0.85em;
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+#quick-replies button:hover {
+    background-color: #bbdefb;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Mensagens do sistema com ícone */
+.system-message::before {
+    content: "⚙️ ";
+    margin-right: 5px;
+}
+
+/* Contador de caracteres dinâmico */
+.char-count-large {
+    color: #ea4335;
+    font-weight: bold;
+}
+
+.char-count-warning {
+    color: #fbbc05;
+    font-weight: bold;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+    #quick-commands {
+        flex-direction: column;
+    }
+    
+    .cmd-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    #button-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    #button-container button {
+        flex: 1;
+        min-width: 100px;
+        justify-content: center;
+    }
+    
+    .footer-info {
+        flex-direction: column;
+        gap: 5px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h3 {
+        font-size: 1rem;
+    }
+    
+    #chat-output {
+        height: 300px;
+    }
+    
+    .user-message, .bot-message, .system-message {
+        max-width: 95%;
+        font-size: 0.9em;
+    }
+}
+
+/* Animações suaves */
+#chat-output {
+    scroll-behavior: smooth;
+}
+
+/* Estilo para botão desabilitado */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+button:disabled:hover {
+    transform: none !important;
+}
+
+/* Scrollbar personalizada */
+#chat-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-output::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#chat-output::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#chat-output::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Highlight para texto sendo processado */
+.processing-text {
+    background-color: #fff8e1;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 5px 0;
+    border-left: 3px solid #ffb300;
+}
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }

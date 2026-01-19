@@ -552,10 +552,6 @@ document.addEventListener("keydown", function (e) {
     addSystemMessage("🔒 Todos os direitos reservados");
   }
 });
-
-
-// ========== Start ==========
-initChat();
-```
-});
-
+ // ========== Start ==========
+  initChat();
+}

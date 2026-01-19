@@ -557,3 +557,5 @@ document.addEventListener("keydown", function (e) {
 // ========== Start ==========
 initChat();
 ```
+});
+

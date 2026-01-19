@@ -14,7 +14,7 @@ const configuracoesAcesso = (function() {
 const MODELOS_CONFIG = {
     "gemini-2.5-flash": {
         maxTokens: 8192,
-        priority: 2
+        priority: 1
     },
     "gemini-2.5-flash-lite": {
         maxTokens: 8192,
@@ -22,7 +22,7 @@ const MODELOS_CONFIG = {
     },
     "gemini-3-flash-preview": {
         maxTokens: 8192,
-        priority: 3
+        priority: 1
     }
 };
 
@@ -41,6 +41,10 @@ const RATE_LIMIT_MS = 15000;
 const TEXTO_GRANDE_THRESHOLD = 2000;
 const MAX_TOKENS_PADRAO = 8192;
 
+// Controle de uso de modelos para rodízio
+let modeloUsageCount = {};
+let lastModelUsed = null;
+
 // DOM Elements
 const chatOutput = document.getElementById('chat-output');
 const textInput = document.getElementById('text-input');
@@ -49,8 +53,9 @@ const clearButton = document.getElementById('clear-button');
 const saveButton = document.getElementById('save-button');
 const quickRepliesContainer = document.getElementById('quick-replies');
 
-// Chat state
-let chatHistory = loadChatHistory();
+// Chat state - mensagens de sistema NÃO são salvas no histórico da API
+let chatHistory = []; // Apenas user/bot (para API)
+let chatDisplayHistory = []; // Todas as mensagens (para display)
 let lastMessageTime = 0;
 let isLoading = false;
 
@@ -66,17 +71,6 @@ const quickReplies = [
     "Explique de forma simples: ",
     "Resuma este texto: "
 ];
-
-// Comandos disponíveis
-const COMANDOS = {
-    '/ajuda': () => showHelp(),
-    '/limpar': () => clearChat(),
-    '/exportar': () => saveChatHistory(),
-    '/grande': () => ativarModoGrande(),
-    '/normal': () => desativarModoGrande(),
-    '/info': () => showInfo(),
-    '/modelos': () => showModelos()
-};
 
 // ============================================
 // FUNÇÕES DE UTILIDADE E GESTÃO
@@ -94,8 +88,21 @@ function loadChatHistory() {
             return [];
         }
         
-        // Limitar histórico carregado
-        return parsed.slice(-MAX_HISTORY_ITEMS);
+        // Separar históricos: apenas user/bot para API, todas para display
+        const apiHistory = [];
+        const displayHistory = [];
+        
+        parsed.forEach(msg => {
+            displayHistory.push(msg);
+            if (msg.role === 'user' || msg.role === 'bot') {
+                apiHistory.push(msg);
+            }
+        });
+        
+        chatHistory = apiHistory.slice(-MAX_HISTORY_ITEMS);
+        chatDisplayHistory = displayHistory.slice(-(MAX_HISTORY_ITEMS + 10)); // +10 para mensagens de sistema
+        
+        return displayHistory;
     } catch (e) {
         console.error('Erro ao carregar histórico:', e);
         localStorage.removeItem('gdchat_history');
@@ -103,28 +110,46 @@ function loadChatHistory() {
     }
 }
 
-// Salvar histórico com limite
+// Salvar histórico com limite - APENAS para display
 function saveChatToCache() {
     try {
-        // Manter apenas últimos N itens
-        const historyToSave = chatHistory.slice(-MAX_HISTORY_ITEMS);
+        // Salvar apenas histórico de display (que tem tudo)
+        const historyToSave = chatDisplayHistory.slice(-(MAX_HISTORY_ITEMS + 10));
         localStorage.setItem('gdchat_history', JSON.stringify(historyToSave));
     } catch (e) {
         console.error('Erro ao salvar histórico:', e);
     }
 }
 
-// Escolher modelo baseado no contexto
-function escolherModeloInteligente() {
-    // Se conversa é curta, usar modelo mais rápido
-    if (chatHistory.length < 3) return "gemini-2.5-flash-lite";
+// Escolher modelo aleatório para rodízio
+function escolherModeloAleatorio() {
+    // Se é o primeiro uso, inicializar contador
+    if (Object.keys(modeloUsageCount).length === 0) {
+        MODELOS_DISPONIVEIS.forEach(modelo => {
+            modeloUsageCount[modelo] = 0;
+        });
+    }
     
-    // Se última mensagem é longa, usar modelo mais capaz
-    const lastMessage = chatHistory[chatHistory.length - 1]?.content || "";
-    if (lastMessage.length > 1000) return "gemini-2.5-flash";
+    // Encontrar modelo menos usado recentemente
+    let availableModels = [...MODELOS_DISPONIVEIS];
     
-    // Padrão para maioria dos casos
-    return "gemini-2.5-flash";
+    // Se usamos um modelo na última vez, tentar não repetir
+    if (lastModelUsed && availableModels.length > 1) {
+        availableModels = availableModels.filter(modelo => modelo !== lastModelUsed);
+    }
+    
+    // Escolher aleatoriamente entre os disponíveis
+    const indice = Math.floor(Math.random() * availableModels.length);
+    const modeloEscolhido = availableModels[indice];
+    
+    // Atualizar contadores
+    modeloUsageCount[modeloEscolhido] = (modeloUsageCount[modeloEscolhido] || 0) + 1;
+    lastModelUsed = modeloEscolhido;
+    
+    console.log(`🎲 Modelo escolhido: ${modeloEscolhido}`);
+    console.log(`📊 Estatísticas uso: ${JSON.stringify(modeloUsageCount)}`);
+    
+    return modeloEscolhido;
 }
 
 // Format Gemini Response (melhorada)
@@ -132,15 +157,11 @@ function formatGeminiResponse(text) {
     if (!text) return '';
     
     let formatted = text
-        // Converter markdown básico para HTML
+        // Converter markdown básico
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/^\s*#{1,6}\s*(.*)$/gm, '<strong>$1</strong>') // Títulos
         // Listas
         .replace(/^\s*[-•]\s*(.*)$/gm, '• $1')
-        .replace(/^\s*\d+\.\s*(.*)$/gm, '$1')
-        // Limpar múltiplas quebras de linha
         .replace(/\n{3,}/g, '\n\n')
         .trim();
     
@@ -176,7 +197,7 @@ function showTypingIndicator() {
     const indicator = document.createElement('div');
     indicator.id = 'typing-indicator';
     indicator.className = 'typing-indicator';
-    indicator.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    indicator.innerHTML = '🤖 GDCHAT está digitando...';
     
     if (chatOutput) {
         chatOutput.appendChild(indicator);
@@ -193,10 +214,10 @@ function hideTypingIndicator() {
 }
 
 // ============================================
-// FUNÇÕES DE MENSAGENS
+// FUNÇÕES DE MENSAGENS (REVISADA)
 // ============================================
 
-function addMessage(role, content, isTyping = false) {
+function addMessage(role, content, isTyping = false, saveToApiHistory = true) {
     if (!chatOutput) return;
     
     const messageDiv = document.createElement('div');
@@ -245,14 +266,30 @@ function addMessage(role, content, isTyping = false) {
         smartScroll();
     }
 
-    if (!isTyping && role !== 'typing') {
-        chatHistory.push({ role, content, timestamp: new Date().toISOString() });
+    if (!isTyping) {
+        // SEMPRE salvar no display history (para mostrar)
+        chatDisplayHistory.push({ 
+            role, 
+            content, 
+            timestamp: new Date().toISOString(),
+            isSystem: role === 'system'
+        });
+        
+        // SALVAR APENAS user/bot no API history (para enviar à API)
+        if (saveToApiHistory && (role === 'user' || role === 'bot')) {
+            chatHistory.push({ 
+                role, 
+                content, 
+                timestamp: new Date().toISOString() 
+            });
+        }
+        
         saveChatToCache();
     }
 }
 
-function addSystemMessage(content) {
-    addMessage('system', content);
+function addSystemMessage(content, saveToApiHistory = false) {
+    addMessage('system', content, false, saveToApiHistory);
 }
 
 // ============================================
@@ -306,8 +343,8 @@ TEXTO PARA CORRIGIR:`;
 async function corrigirTextoGrande(texto) {
     const partes = dividirTextoGrande(texto);
     
-    addMessage('user', `[TEXTO GRANDE - ${texto.length.toLocaleString()} caracteres] Corrigir texto:`);
-    showTypingIndicator();
+    // Apenas uma mensagem no chat, não no histórico da API
+    addSystemMessage(`📝 Processando texto grande (${texto.length.toLocaleString()} caracteres em ${partes.length} partes)...`, false);
     
     let resultadoCompleto = '';
     let modeloUsado = null;
@@ -315,10 +352,18 @@ async function corrigirTextoGrande(texto) {
     try {
         for (let i = 0; i < partes.length; i++) {
             const parteNum = i + 1;
-            addSystemMessage(`📝 Processando parte ${parteNum}/${partes.length}...`);
             
-            // Escolher modelo para esta parte
-            const modeloAtual = "gemini-2.5-flash"; // Usar modelo consistente para todo o texto
+            // Mostrar progresso apenas se tiver muitas partes
+            if (partes.length > 1) {
+                // Atualizar a mesma mensagem de sistema
+                const lastSystemMsg = document.querySelector('.system-message:last-child');
+                if (lastSystemMsg && i > 0) {
+                    lastSystemMsg.textContent = `📝 Processando parte ${parteNum}/${partes.length}...`;
+                }
+            }
+            
+            // Usar modelo aleatório para cada parte (para rodízio)
+            const modeloAtual = escolherModeloAleatorio();
             if (!modeloUsado) modeloUsado = modeloAtual;
             
             const prompt = criarPromptCorrecao(partes[i], parteNum, partes.length);
@@ -353,7 +398,7 @@ async function corrigirTextoGrande(texto) {
             
             // Verificar bloqueios
             if (data.promptFeedback?.blockReason) {
-                addSystemMessage(`⚠️ Parte ${parteNum} bloqueada: ${data.promptFeedback.blockReason}`);
+                addSystemMessage(`⚠️ Parte ${parteNum} bloqueada: ${data.promptFeedback.blockReason}`, false);
                 resultadoCompleto += `[Parte ${parteNum} bloqueada por filtro de segurança]\n\n`;
                 continue;
             }
@@ -362,33 +407,44 @@ async function corrigirTextoGrande(texto) {
             resultadoCompleto += parteCorrigida + (i < partes.length - 1 ? '\n\n' : '');
         }
         
-        hideTypingIndicator();
+        // Limpar mensagem de processamento
+        const processingMsg = document.querySelector('.system-message:last-child');
+        if (processingMsg && processingMsg.textContent.includes('Processando')) {
+            processingMsg.remove();
+        }
         
-        // Adicionar resultado completo
-        addMessage('bot', `✅ Texto corrigido (${modeloUsado}):\n\n${resultadoCompleto}`);
+        // Adicionar resultado completo (não é mensagem de sistema, vai para histórico da API)
+        addMessage('bot', `✅ Texto corrigido completo:\n\n${resultadoCompleto}`, false, true);
         
-        // Adicionar estatísticas
-        addSystemMessage(`📊 Estatísticas: ${partes.length} parte(s) processada(s), ${resultadoCompleto.length.toLocaleString()} caracteres totais`);
+        // Apenas uma mensagem de confirmação simples
+        if (partes.length > 1) {
+            addSystemMessage(`📊 ${partes.length} partes processadas com sucesso.`, false);
+        }
         
     } catch (error) {
-        hideTypingIndicator();
-        addSystemMessage(`❌ Erro ao processar texto grande: ${error.message}`);
+        // Limpar mensagem de processamento em caso de erro
+        const processingMsg = document.querySelector('.system-message:last-child');
+        if (processingMsg && processingMsg.textContent.includes('Processando')) {
+            processingMsg.remove();
+        }
+        
+        addSystemMessage(`❌ Erro ao processar texto grande: ${error.message}`, false);
         console.error('Erro:', error);
     }
 }
 
 // ============================================
-// FUNÇÃO PRINCIPAL DE ENVIO
+// FUNÇÃO PRINCIPAL DE ENVIO (REVISADA)
 // ============================================
 
 async function sendMessage(message) {
     if (isLoading) {
-        addSystemMessage("⚠️ Aguarde a resposta anterior...");
+        addSystemMessage("⚠️ Aguarde a resposta anterior...", false);
         return;
     }
     
     if (Date.now() - lastMessageTime < RATE_LIMIT_MS) {
-        addSystemMessage(`⚠️ Aguarde ${Math.ceil((RATE_LIMIT_MS - (Date.now() - lastMessageTime)) / 1000)} segundos entre mensagens`);
+        addSystemMessage(`⚠️ Aguarde ${Math.ceil((RATE_LIMIT_MS - (Date.now() - lastMessageTime)) / 1000)} segundos`, false);
         return;
     }
     
@@ -404,23 +460,39 @@ async function sendMessage(message) {
         sendButton.textContent = 'Enviando...';
     }
     
-    // Verificar comandos
+    // Verificar comandos especiais
     if (message.startsWith('/')) {
-        const comando = message.toLowerCase().split(' ')[0];
-        if (COMANDOS[comando]) {
-            COMANDOS[comando]();
-            isLoading = false;
-            if (sendButton) {
-                sendButton.disabled = false;
-                sendButton.textContent = 'Enviar';
-            }
-            return;
+        const comando = message.toLowerCase();
+        switch(comando) {
+            case '/ajuda':
+                showHelp();
+                break;
+            case '/limpar':
+                clearChat();
+                break;
+            case '/exportar':
+                saveChatHistory();
+                break;
+            case '/sair':
+            case '/exit':
+            case '/fim':
+                addSystemMessage("> Chat encerrado. Até mais!", false);
+                break;
+            default:
+                addSystemMessage(`❌ Comando desconhecido: ${message}`, false);
+                addSystemMessage("Digite /ajuda para ver comandos disponíveis", false);
         }
+        isLoading = false;
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.textContent = 'Enviar';
+        }
+        return;
     }
     
-    // Verificar se é saída
+    // Verificar se é saída (sem barra)
     if (["sair", "exit", "fim", "quit"].includes(message.toLowerCase())) {
-        addSystemMessage("> Chat encerrado. Até mais!");
+        addSystemMessage("> Chat encerrado. Até mais!", false);
         isLoading = false;
         if (sendButton) {
             sendButton.disabled = false;
@@ -431,11 +503,11 @@ async function sendMessage(message) {
     
     // Detectar texto grande para correção
     const isCorrecaoTexto = message.toLowerCase().includes('corrigir') || 
-                           message.toLowerCase().includes('corrija') ||
-                           (message.length > TEXTO_GRANDE_THRESHOLD && message.length < 30000);
+                           message.toLowerCase().includes('corrija');
     
     if (isCorrecaoTexto && message.length > TEXTO_GRANDE_THRESHOLD) {
-        const confirmar = confirm(`📝 Texto grande detectado (${message.length.toLocaleString()} caracteres).\n\nDeseja processar em modo especial para evitar corte?`);
+        // Mostrar apenas uma mensagem de confirmação
+        const confirmar = confirm(`📝 Texto grande detectado (${message.length.toLocaleString()} caracteres).\n\nDeseja processar em modo especial?`);
         if (confirmar) {
             await corrigirTextoGrande(message);
             isLoading = false;
@@ -447,21 +519,25 @@ async function sendMessage(message) {
         }
     }
     
-    // Processamento normal
-    addMessage('user', message);
+    // Processamento normal - mensagem do usuário VAI para histórico da API
+    addMessage('user', message, false, true);
     showTypingIndicator();
     
     try {
-        const modeloAtual = escolherModeloInteligente();
+        const modeloAtual = escolherModeloAleatorio();
         const maxTokens = message.length > 1000 ? MAX_TOKENS_PADRAO : 4096;
         
-        // Preparar histórico para API (remover mensagens de sistema)
-        const apiHistory = chatHistory
-            .filter(msg => msg.role !== 'system')
-            .map(msg => ({
-                role: msg.role === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.content }]
-            }));
+        // Preparar histórico para API (APENAS user/bot, SEM system messages)
+        const apiHistory = chatHistory.map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.content }]
+        }));
+        
+        console.log(`Enviando para API (modelo: ${modeloAtual}):`, {
+            messageCount: apiHistory.length,
+            lastMessage: message.substring(0, 100) + '...',
+            maxTokens: maxTokens
+        });
         
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modeloAtual}:generateContent?key=${configuracoesAcesso}`, {
             method: 'POST',
@@ -492,32 +568,24 @@ async function sendMessage(message) {
         
         // Verificar bloqueios
         if (data.promptFeedback?.blockReason) {
-            addSystemMessage(`⚠️ Resposta bloqueada: ${data.promptFeedback.blockReason}`);
+            addSystemMessage(`⚠️ Resposta bloqueada: ${data.promptFeedback.blockReason}`, false);
             hideTypingIndicator();
             return;
         }
         
         const botResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ Resposta inesperada';
         
-        // Verificar truncamento
+        // Verificar truncamento (apenas log)
         if (botResponse.length > 7000 && (botResponse.endsWith('...') || botResponse.includes('[continua]'))) {
-            addSystemMessage("⚠️ Resposta possivelmente truncada devido ao limite de tokens.");
-            if (message.length > 1000) {
-                addSystemMessage("💡 Dica: Para textos muito longos, mencione explicitamente 'corrigir' no início.");
-            }
+            console.warn('Possível truncamento detectado na resposta');
         }
         
-        addMessage('bot', botResponse);
+        // Resposta do bot VAI para histórico da API
+        addMessage('bot', botResponse, false, true);
         
     } catch (error) {
         console.error('Erro:', error);
-        addSystemMessage(`❌ Erro: ${error.message}`);
-        
-        // Tentar fallback para outro modelo em caso de erro
-        if (error.message.includes('model') || error.message.includes('404')) {
-            addSystemMessage("🔄 Tentando com modelo alternativo...");
-            // Poderia implementar fallback aqui
-        }
+        addSystemMessage(`❌ Erro: ${error.message}`, false);
         
     } finally {
         hideTypingIndicator();
@@ -535,54 +603,22 @@ async function sendMessage(message) {
 // ============================================
 
 function showHelp() {
-    addSystemMessage("📋 COMANDOS DISPONÍVEIS:");
-    addSystemMessage("/ajuda - Mostra esta mensagem");
-    addSystemMessage("/limpar - Reinicia a conversa");
-    addSystemMessage("/exportar - Salva o histórico em arquivo");
-    addSystemMessage("/info - Mostra informações do sistema");
-    addSystemMessage("/modelos - Lista modelos disponíveis");
-    addSystemMessage("/grande - Ativa modo para textos grandes");
-    addSystemMessage("/normal - Volta ao modo normal");
-    addSystemMessage(" ");
-    addSystemMessage("💡 DICAS:");
-    addSystemMessage("- Textos grandes (>2000 chars) são processados automaticamente");
-    addSystemMessage("- Para correção completa, inclua 'corrigir' no pedido");
-    addSystemMessage("- Use os botões de resposta rápida para exemplos");
-}
-
-function showInfo() {
-    const modeloAtual = escolherModeloInteligente();
-    addSystemMessage("📊 INFORMAÇÕES DO SISTEMA:");
-    addSystemMessage(`• Modelo atual: ${modeloAtual}`);
-    addSystemMessage(`• Histórico: ${chatHistory.length} mensagens`);
-    addSystemMessage(`• Limite de tokens: ${MODELOS_CONFIG[modeloAtual]?.maxTokens || MAX_TOKENS_PADRAO}`);
-    addSystemMessage(`• Texto grande: >${TEXTO_GRANDE_THRESHOLD} caracteres`);
-    addSystemMessage(`• Última mensagem: ${lastMessageTime ? new Date(lastMessageTime).toLocaleTimeString() : 'Nenhuma'}`);
-}
-
-function showModelos() {
-    addSystemMessage("🤖 MODELOS DISPONÍVEIS:");
-    MODELOS_DISPONIVEIS.forEach(modelo => {
-        const config = MODELOS_CONFIG[modelo];
-        addSystemMessage(`• ${modelo} - ${config.maxTokens} tokens (prioridade: ${config.priority})`);
+    // Limpar ajuda anterior se existir
+    const existingHelp = document.querySelectorAll('.system-message');
+    existingHelp.forEach(msg => {
+        if (msg.textContent.includes('COMANDOS DISPONÍVEIS')) {
+            msg.remove();
+        }
     });
-    addSystemMessage(`\nModelo selecionado automaticamente baseado no contexto.`);
-}
-
-function ativarModoGrande() {
-    if (textInput) {
-        textInput.placeholder = "📝 Modo texto grande ativado. Cole textos longos aqui...";
-    }
-    addSystemMessage("📝 MODO TEXTO GRANDE ATIVADO");
-    addSystemMessage("Agora você pode colar textos longos para correção completa.");
-    addSystemMessage("O sistema dividirá automaticamente textos muito grandes.");
-}
-
-function desativarModoGrande() {
-    if (textInput) {
-        textInput.placeholder = "Digite sua mensagem aqui...";
-    }
-    addSystemMessage("📝 Modo texto grande desativado.");
+    
+    // Adicionar nova ajuda (não salva no histórico da API)
+    addSystemMessage("📋 COMANDOS DISPONÍVEIS:", false);
+    addSystemMessage("/ajuda - Mostra esta mensagem", false);
+    addSystemMessage("/limpar - Reinicia a conversa", false);
+    addSystemMessage("/exportar - Salva o histórico em arquivo", false);
+    addSystemMessage("sair, exit, fim - Encerra o chat", false);
+    addSystemMessage(" ", false);
+    addSystemMessage("💡 Para textos grandes (>2000 chars), inclua 'corrigir' no pedido", false);
 }
 
 function saveChatHistory() {
@@ -593,10 +629,10 @@ function saveChatHistory() {
         let content = '=== HISTÓRICO DO CHAT GDCHAT ===\n';
         content += `Data: ${new Date().toLocaleDateString()}\n`;
         content += `Hora: ${new Date().toLocaleTimeString()}\n`;
-        content += `Total de mensagens: ${chatHistory.length}\n`;
+        content += `Mensagens: ${chatDisplayHistory.length} (${chatHistory.length} para API)\n`;
         content += '='.repeat(40) + '\n\n';
         
-        chatHistory.forEach((message, index) => {
+        chatDisplayHistory.forEach((message, index) => {
             const role = message.role === 'user' ? '👤 VOCÊ' : 
                         message.role === 'system' ? '⚙️ SISTEMA' : '🤖 GDCHAT';
             
@@ -617,12 +653,12 @@ function saveChatHistory() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        addSystemMessage(`✅ Histórico salvo como ${filename} (${chatHistory.length} mensagens)`);
+        addSystemMessage(`✅ Histórico salvo como ${filename}`, false);
         return filename;
         
     } catch (error) {
         console.error('Erro ao salvar:', error);
-        addSystemMessage(`❌ Erro ao salvar: ${error.message}`);
+        addSystemMessage(`❌ Erro ao salvar: ${error.message}`, false);
         return null;
     }
 }
@@ -631,15 +667,21 @@ function clearChat() {
     if (!confirm("Tem certeza que deseja limpar TODO o histórico da conversa?")) return;
     
     chatHistory = [];
+    chatDisplayHistory = [];
+    modeloUsageCount = {};
+    lastModelUsed = null;
+    
     localStorage.removeItem('gdchat_history');
     
     if (chatOutput) {
         chatOutput.innerHTML = '';
     }
     
-    // Reiniciar chat com mensagem de boas-vindas
-    initChat();
-    addSystemMessage("✅ Histórico limpo com sucesso. Conversa reiniciada.");
+    // Reiniciar chat com mensagem de boas-vindas mínima
+    addSystemMessage("=== BEM-VINDO AO GDCHAT ===", false);
+    addSystemMessage("Digite /ajuda para ver comandos disponíveis", false);
+    
+    initQuickReplies();
 }
 
 // ============================================
@@ -661,8 +703,6 @@ function initQuickReplies() {
             if (textInput) {
                 textInput.value = reply;
                 textInput.focus();
-                // Rolar para o input
-                textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
         
@@ -682,19 +722,17 @@ function initScrollHandler() {
             const scrollHeight = chatOutput.scrollHeight;
             const clientHeight = chatOutput.clientHeight;
             
-            // Usuário rolou para cima e não está perto do final
             if (currentScroll < lastScrollPosition && 
                 currentScroll < scrollHeight - clientHeight - 300) {
                 userScrolledUp = true;
             }
             
-            // Se chegou perto do final, resetar flag
             if (currentScroll >= scrollHeight - clientHeight - 100) {
                 userScrolledUp = false;
             }
             
             lastScrollPosition = currentScroll;
-        }, 150); // Debounce de 150ms
+        }, 150);
     });
 }
 
@@ -723,13 +761,6 @@ function initEventListeners() {
                 }
             }
         });
-        
-        // Permitir Shift+Enter para nova linha
-        textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.shiftKey) {
-                // Permite nova linha - comportamento padrão
-            }
-        });
     }
     
     // Botões de ação
@@ -741,7 +772,7 @@ function initEventListeners() {
         saveButton.addEventListener('click', saveChatHistory);
     }
     
-    // Prevenção de F12/Inspecionar (para uso interno)
+    // Prevenção de F12/Inspecionar
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12' ||
             (e.ctrlKey && e.shiftKey && e.key === 'I') ||
@@ -749,7 +780,7 @@ function initEventListeners() {
             (e.ctrlKey && e.shiftKey && e.key === 'C') ||
             (e.ctrlKey && e.key === 'U')) {
             e.preventDefault();
-            addSystemMessage('🔒 GDCHAT - Uso interno autorizado');
+            addSystemMessage('🔒 GDCHAT - Uso interno', false);
         }
     });
     
@@ -762,42 +793,32 @@ function initEventListeners() {
 }
 
 function initChat() {
+    // Carregar históricos
+    const loadedHistory = loadChatHistory();
+    
     // Limpar interface
     if (chatOutput) {
         chatOutput.innerHTML = '';
     }
     
-    // Adicionar mensagem de boas-vindas se histórico vazio
-    if (chatHistory.length === 0) {
-        addSystemMessage("🤖 === BEM-VINDO AO GDCHAT ===");
-        addSystemMessage("💬 Chat inteligente com modelos Gemini");
-        addSystemMessage(" ");
-        addSystemMessage("📋 COMANDOS DISPONÍVEIS:");
-        addSystemMessage("• Digite /ajuda para ver todos os comandos");
-        addSystemMessage("• Use 'sair', 'fim' ou 'exit' para encerrar");
-        addSystemMessage("• /limpar - Reinicia a conversa");
-        addSystemMessage("• /exportar - Salva o histórico");
-        addSystemMessage("• /grande - Modo para textos grandes");
-        addSystemMessage(" ");
-        addSystemMessage("💡 DICAS RÁPIDAS:");
-        addSystemMessage("• Textos grandes são processados automaticamente");
-        addSystemMessage("• Para correção: inclua 'corrigir' no pedido");
-        addSystemMessage("• Use os botões abaixo para exemplos");
-        addSystemMessage("=".repeat(40));
+    // Se não há histórico, mostrar mensagem mínima de boas-vindas
+    if (loadedHistory.length === 0) {
+        addSystemMessage("=== BEM-VINDO AO GDCHAT ===", false);
+        addSystemMessage("Digite /ajuda para ver comandos disponíveis", false);
+        addSystemMessage(" ", false);
     } else {
-        // Recarregar histórico existente
-        chatHistory.forEach(msg => {
+        // Recarregar histórico existente (todas as mensagens)
+        loadedHistory.forEach(msg => {
+            // Reenviar mensagens na tela, mas não recriar histórico da API
             if (msg.role === 'system') {
-                addSystemMessage(msg.content);
+                addMessage('system', msg.content, false, false);
             } else {
-                addMessage(msg.role, msg.content);
+                addMessage(msg.role, msg.content, false, msg.role !== 'system');
             }
         });
         
-        // Adicionar mensagem de continuação
-        addSystemMessage(" ");
-        addSystemMessage("↩️ Conversa anterior carregada");
-        addSystemMessage(`📊 ${chatHistory.length} mensagens no histórico`);
+        // Apenas uma mensagem de confirmação
+        addSystemMessage(`↩️ Conversa anterior carregada (${loadedHistory.length} mensagens)`, false);
     }
     
     // Inicializar componentes
@@ -805,11 +826,9 @@ function initChat() {
     initScrollHandler();
     initEventListeners();
     
-    // Mostrar informações do modelo atual
-    setTimeout(() => {
-        const modeloAtual = escolherModeloInteligente();
-        addSystemMessage(`⚙️ Modelo atual: ${modeloAtual} (${MODELOS_CONFIG[modeloAtual]?.maxTokens || MAX_TOKENS_PADRAO} tokens)`);
-    }, 1000);
+    // Log do modelo inicial (apenas console)
+    const modeloInicial = escolherModeloAleatorio();
+    console.log(`🚀 GDCHAT iniciado. Modelo inicial: ${modeloInicial}`);
 }
 
 // ============================================
@@ -831,12 +850,9 @@ window.GDCHAT = {
     addSystemMessage,
     corrigirTextoGrande,
     showHelp,
-    showInfo,
-    getHistory: () => chatHistory,
-    getStats: () => ({
-        messages: chatHistory.length,
-        lastMessageTime,
-        isLoading,
-        currentModel: escolherModeloInteligente()
-    })
+    getHistory: () => ({ 
+        api: chatHistory.length, 
+        display: chatDisplayHistory.length 
+    }),
+    getModelStats: () => modeloUsageCount
 };

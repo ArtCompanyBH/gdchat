@@ -5,39 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🤖 GDCHAT</title>
     <link rel="stylesheet" href="style.css" />
+    <!-- Adicione Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <h1>🤖 GDCHAT</h1>
-    <h3>O amigo virtual da Gestão Documental do TJMMG</h3>
+    <div class="header-container">
+        <h1>🤖 GDCHAT</h1>
+        <h3>O amigo virtual da Gestão Documental do TJMMG</h3>
+        <div id="system-info"></div>
+    </div>
     
     <div id="chat-container">
         <div id="bot-status">
             <span class="status-dot"></span>
             <span>GDCHAT Online</span>
+            <span id="model-indicator" class="model-indicator">🔧 Modelo: Carregando...</span>
         </div>
         <div id="chat-output"></div>
+        
+        <!-- Adicione esta div para comandos rápidos -->
+        <div id="quick-commands">
+            <button class="cmd-btn" data-cmd="/ajuda"><i class="fas fa-question-circle"></i> Ajuda</button>
+            <button class="cmd-btn" data-cmd="/grande"><i class="fas fa-text-height"></i> Texto Grande</button>
+            <button class="cmd-btn" data-cmd="/exportar"><i class="fas fa-download"></i> Exportar</button>
+            <button class="cmd-btn" data-cmd="/info"><i class="fas fa-info-circle"></i> Info</button>
+        </div>
+        
         <div id="quick-replies"></div>
         <div id="input-container">
-            <input type="text" id="text-input" placeholder="Digite sua mensagem..." x-webkit-speech>
+            <textarea id="text-input" placeholder="Digite sua mensagem ou cole texto grande aqui..." rows="3"></textarea>
+            <div class="input-stats">
+                <span id="char-count">0 caracteres</span>
+                <span id="text-warning" class="warning"></span>
+            </div>
         </div>
         <div id="button-container">
             <button id="send-button">
+                <i class="fas fa-paper-plane"></i>
                 <span>Enviar</span>
             </button>
             <button id="clear-button">
+                <i class="fas fa-trash"></i>
                 <span>Limpar</span>
             </button>
             <button id="save-button">
+                <i class="fas fa-save"></i>
                 <span>Salvar</span>
             </button>
         </div>
     </div>
     
     <footer class="site-footer">
-        <div>GDCHAT v3.0</div>
+        <div>GDCHAT v3.0 - <span id="history-count">0 mensagens</span></div>
         <div>Desenvolvido por <a href="#" target="_blank">Yuri Antoniazzi</a> - © 2026</div>
+        <div class="footer-info">
+            <span id="token-info">Tokens: N/A</span>
+            <span id="last-update">Última atualização: --:--:--</span>
+        </div>
     </footer>
     <script src="script.js"></script>
-
 </body>
 </html>

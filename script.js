@@ -78,7 +78,7 @@ function escapeHtml(str) {
     .replaceAll("'", "&#39;");
 }
 
-// Markdown ultra básico (seguro): aplica APÓS escapeHtml
+// Markdown ultra básico : aplica APÓS escapeHtml
 // Observação: mantém simples para não quebrar textos; evita regex agressivo.
 function renderSafeBasicMarkdown(escapedText) {
   let t = escapedText;
@@ -110,7 +110,7 @@ function nowTimeLabel() {
 }
 
 // ============================================
-// HISTÓRICO: load/save (sem duplicar no init)
+// HISTÓRICO: load/save 
 // ============================================
 
 function loadChatHistory() {
@@ -212,10 +212,10 @@ function hideTypingIndicator() {
 }
 
 // ============================================
-// MENSAGENS: render seguro + histórico coerente
+// MENSAGENS: render seguro 
 // ============================================
 
-// Renderiza um item na UI (não mexe no histórico)
+// Renderiza um item na UI 
 function renderMessageToUI({ role, content, timestampISO, isSystem = false }) {
   if (!chatOutput) return null;
 

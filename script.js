@@ -59,7 +59,7 @@ let scrollTimeout;
 
 // Quick replies
 const quickReplies = [
-  "Corrigir textos gramaticalmente e retornar apenas o texto pronto:\n\n",
+  "Corrigir textos gramaticalmente e retornar apenas o texto pronto: ",
   "Em que você pode me ajudar?",
   "Explique de forma simples: ",
   "Resuma este texto: ",

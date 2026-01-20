@@ -60,6 +60,37 @@
             <span id="last-update">Última atualização: --:--:--</span>
         </div>
     </footer>
+    <script>
+(() => {
+  const root = document.documentElement;
+  const btn  = document.getElementById("theme-toggle");
+  const icon = btn.querySelector(".icon");
+
+  const savedTheme = localStorage.getItem("theme");
+
+  if (savedTheme) {
+    root.setAttribute("data-theme", savedTheme);
+  }
+
+  const currentTheme = () =>
+    root.getAttribute("data-theme") ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+  const updateIcon = () => {
+    icon.textContent = currentTheme() === "dark" ? "☀️" : "🌙";
+  };
+
+  updateIcon();
+
+  btn.addEventListener("click", () => {
+    const next = currentTheme() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+    updateIcon();
+  });
+})();
+</script>
+
     <script src="script.js"></script>
 </body>
 </html>

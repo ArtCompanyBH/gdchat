@@ -545,3 +545,247 @@ button:disabled:hover {
                 max-width: 90%;
             }
         }
+/* =========================
+   Modern Chatbot Theme Patch
+   Cole no FINAL do CSS
+========================= */
+
+:root{
+  --bg: #0b0f19;
+  --panel: rgba(255,255,255,.06);
+  --panel-2: rgba(255,255,255,.08);
+  --border: rgba(255,255,255,.10);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.65);
+  --muted-2: rgba(255,255,255,.45);
+
+  --accent: #7c3aed;       /* roxo moderno */
+  --accent-2: #22c55e;     /* ok/confirm */
+  --danger: #ef4444;       /* perigo */
+  --info: #60a5fa;
+
+  --shadow: 0 16px 48px rgba(0,0,0,.35);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+
+/* Body vira "app background" */
+body{
+  max-width: none;              /* remove o look de página estreita */
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 20% 10%, rgba(124,58,237,.25), transparent 60%),
+    radial-gradient(900px 500px at 80% 30%, rgba(34,197,94,.18), transparent 55%),
+    radial-gradient(900px 700px at 50% 90%, rgba(96,165,250,.12), transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+/* Header mais clean */
+h1{
+  color: var(--text);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin: 6px 0 6px;
+}
+h3{
+  color: var(--muted);
+  margin-top: 0;
+  font-weight: 450;
+}
+
+/* Container principal com "glass" */
+#chat-container{
+  max-width: 980px;
+  margin: 18px auto 0;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--panel), rgba(255,255,255,.04));
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+/* Área de comandos (chips) mais moderna */
+#quick-commands{
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-btn{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.10);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+}
+.cmd-btn:hover{
+  background: rgba(255,255,255,.12);
+  transform: translateY(-1px);
+}
+
+/* Output mais clean, melhor scroll e espaçamento */
+#chat-output{
+  height: min(62vh, 560px);
+  padding: 18px;
+  background: transparent;
+  line-height: 1.55;
+}
+
+/* Input container com visual "composer" */
+#input-container{
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.05));
+  border-top: 1px solid var(--border);
+}
+
+/* Textarea premium */
+textarea#text-input, #text-input{
+  background: rgba(0,0,0,.25);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: 12px 12px;
+}
+textarea#text-input::placeholder, #text-input::placeholder{
+  color: var(--muted-2);
+}
+textarea#text-input:focus, #text-input:focus{
+  border-color: rgba(124,58,237,.55);
+  box-shadow: 0 0 0 3px rgba(124,58,237,.18);
+}
+
+/* Botões: primário + secundários neutros */
+#button-container{
+  background: transparent;
+  border-top: 1px solid var(--border);
+  gap: 10px;
+}
+
+button{
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+button:hover{
+  opacity: 1;
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.12);
+}
+
+/* Define uma hierarquia: enviar = primário */
+#send-button{
+  background: linear-gradient(180deg, rgba(124,58,237,.95), rgba(124,58,237,.75));
+  border-color: rgba(124,58,237,.60);
+}
+#send-button:hover{
+  background: linear-gradient(180deg, rgba(124,58,237,1), rgba(124,58,237,.78));
+}
+
+/* Ações secundárias: clear e save */
+#clear-button{
+  background: rgba(239,68,68,.12);
+  border-color: rgba(239,68,68,.35);
+}
+#save-button{
+  background: rgba(96,165,250,.12);
+  border-color: rgba(96,165,250,.35);
+}
+
+/* Mensagens: bolhas com borda sutil e tipografia melhor */
+.user-message,
+.bot-message{
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 8px 22px rgba(0,0,0,.18);
+  backdrop-filter: blur(6px);
+}
+
+.user-message{
+  margin-left: auto;
+  max-width: min(78%, 720px);
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(96,165,250,.18), rgba(96,165,250,.10));
+  border-top-right-radius: 8px;
+}
+
+.bot-message{
+  max-width: min(78%, 720px);
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+  border-top-left-radius: 8px;
+}
+
+/* Timestamp mais discreto */
+.timestamp{
+  color: var(--muted-2);
+}
+
+/* Status */
+#bot-status{
+  color: var(--muted);
+}
+.status-dot{
+  background-color: var(--accent-2);
+}
+
+/* Quick replies: evita conflito e deixa pílula moderna */
+#quick-replies button{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--text);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+}
+#quick-replies button:hover{
+  background: rgba(255,255,255,.12);
+  transform: translateY(-1px);
+}
+
+/* Copiar mensagem do bot: mais sutil e coerente */
+.copy-btn{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.25);
+  border-radius: 10px;
+  padding: 6px 8px;
+  color: var(--muted);
+}
+.copy-btn:hover{
+  color: var(--accent-2);
+  border-color: rgba(34,197,94,.45);
+}
+
+/* Typing indicator: escolhe UMA abordagem (a dos dots) */
+.typing-indicator::after{ content: ""; animation: none; } /* desliga a anim do content */
+.typing-indicator{
+  color: var(--muted);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* Scrollbar mais moderna */
+#chat-output::-webkit-scrollbar-track{
+  background: rgba(255,255,255,.06);
+}
+#chat-output::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.18);
+}
+#chat-output::-webkit-scrollbar-thumb:hover{
+  background: rgba(255,255,255,.24);
+}
+
+/* Footer */
+.site-footer{
+  color: var(--muted);
+  border-top: 1px solid rgba(255,255,255,.10);
+}
+.site-footer a{ color: rgba(124,58,237,.95); }

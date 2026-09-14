@@ -7,7 +7,7 @@ const configuracoesAcesso = (function () {
 
 // Lista de modelos disponíveis com limites de tokens
 const MODELOS_CONFIG = {
-  "gemini-3.5-flash": { maxTokens: 8192, priority: 1 },
+  "gemini-3.5-flash-lite": { maxTokens: 8192, priority: 1 },
   "gemini-3.1-flash-lite": { maxTokens: 8192, priority: 1 },
 };
 
